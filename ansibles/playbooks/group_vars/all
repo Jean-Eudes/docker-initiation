@@ -1,0 +1,5 @@
+keypair: jpthieryxebiafr
+keypair_pub_local_path: ~/.ssh/aws_rsa.pub
+keypair_local_path: ~/.ssh/aws_rsa
+
+timezone: "Europe/Paris"

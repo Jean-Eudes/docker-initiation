@@ -1,0 +1,60 @@
+---
+  - hosts: seed
+    connection: local
+    gather_facts: false
+    
+    tasks:
+
+      - name: Check SSH Keypair 
+        local_action:
+          module: ec2_key
+          name: "{{keypair}}"
+          key_material: "{{ item }}"
+        with_file: keypair_pub_local_path
+
+      - name: Create EC2 security groups
+        local_action:
+          module: ec2_group
+          name: "{{ item.security_group.name }}"
+          description: "{{ item.security_group.description }}"
+        with_items:
+          - "{{runner}}"
+        tags: security
+
+      - name: Apply EC2 security group rules
+        local_action:
+          module: ec2_group
+          name: "{{ item.security_group.name }}"
+          description: "{{ item.security_group.description }}"
+          rules: "{{item.security_group.inbound_rules}}"
+          rules_egress: "{{item.security_group.outbound_rules}}"
+        with_items:
+          - "{{runner}}"
+        tags: security
+
+      - name: Create runner instances
+        local_action:
+          module: ec2
+          key_name: "{{ keypair }}"
+          instance_type: "{{ item.type }}"
+          group: "{{ item.security_group.name }}"
+          instance_tags:
+            Client: "{{ item.client }}"
+            Name: "{{ item.name }}"
+          image: "{{ item.ami }}"
+          wait: yes
+          exact_count: "{{ item.count }}"
+          count_tag: xke-docker
+          id: "{{ item.idempotency_id }}"
+        register: "ec2result"
+        with_items:
+          - "{{runner}}"
+
+      - name: Collecting instance infos for runner nodes
+        local_action: add_host hostname={{ item.public_dns_name }} groupname=runner 
+        with_items: ec2result.results[0].instances
+
+      - name: Generate EC2 runner inventory
+        template:
+          src=templates/inventory_runner.j2
+          dest=../inventory/ec2_dev_sampleweb

@@ -1,0 +1,77 @@
+---
+  - hosts: runner
+    sudo: yes
+  
+    tasks:
+      - name: Update distribution
+        command:
+          /usr/bin/apt-get update -y
+        tags: 
+          - upgrade
+      - name: Upgrate distribution
+        command:
+          /usr/bin/apt-get upgrade -y
+        tags: 
+          - upgrade
+      - name: Add docker repository key
+        command:
+          apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 36A1D7869245C8950F966E92D8576A8BA88D21E9
+        tags:
+          - setup
+          - upgrade
+      - name: Add docker repository
+        lineinfile: dest=/etc/apt/sources.list.d/docker.list create=true line="deb https://get.docker.com/ubuntu docker main"
+        tags:
+          - setup
+      - name: Update distribution
+        command:
+          /usr/bin/apt-get update -y
+        tags: 
+          - upgrade
+      - name: Install python-apt
+        command: 
+          /usr/bin/apt-get install -y python-apt
+        tags: 
+          - setup
+     
+#      - name: Custom dockerfile
+#        lineinfile: dest=/etc/default/docker regexp="^DOCKER_OPTS=" line="DOCKER_OPTS=\"-H unix:///var/run/docker.sock --storage-driver=devicemapper -H tcp://0.0.0.0:4243 --insecure-registry {{hostvars[groups['backend'][0]]['ansible_' ~ public_interface]['ipv4']['address']}}:5000\""
+#        notify: restart docker
+#        tags: 
+#          - setup
+      - name: Install docker
+        apt:
+          pkg={{ item }}
+          state=present
+        with_items:
+          - lxc-docker
+          - vim
+          - python-pip
+      - name: Add docker group
+        group: name=docker state=present
+        tags: 
+          - setup
+      - name: Add current user to docker group
+        user: name=ubuntu groups=docker
+        tags:
+          - setup
+      - name: Install docker python librairie
+        pip: name=docker-py
+        tags: 
+          - setup
+              
+      - name: Copy Dockerfiles
+        copy:
+          src=../files/docker dest=/ mode=777 force=true
+        tags:
+          - docker
+          
+      - name: Build Java 8 Docker image
+        docker_image:
+          name='jpthiery/java8'
+          path='/docker/java8'
+          state=build
+        tags:
+          - docker
+          - docker-build
+          - java
