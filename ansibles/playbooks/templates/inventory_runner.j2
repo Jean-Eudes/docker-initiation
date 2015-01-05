@@ -1,0 +1,4 @@
+[runner]
+{% for host in groups['runner'] %}
+{{ host }} ansible_ssh_private_key_file={{ keypair_local_path }} ansible_ssh_user=ubuntu 
+{% endfor %}

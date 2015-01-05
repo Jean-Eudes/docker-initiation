@@ -1,0 +1,17 @@
+---
+runner:
+  ami: ami-f0b11187
+  type: t2.micro
+  client: sample-web
+  idempotency_id: "stage_ru_00007"
+  count: 1
+  name: xke_docker
+  security_group:
+    name: sampleweb
+    description: sampleweb security group rules
+    inbound_rules:
+      - { proto: tcp, from_port: 22, to_port: 22, cidr_ip: 0.0.0.0/0 }
+      - { proto: tcp, from_port: 8080, to_port: 8080, cidr_ip: 0.0.0.0/0 }
+    outbound_rules:
+      - { proto: tcp, from_port: 80, to_port: 80, cidr_ip: 0.0.0.0/0 }
+      - { proto: tcp, from_port: 443, to_port: 443, cidr_ip: 0.0.0.0/0 }
